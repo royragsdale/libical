@@ -81,6 +81,10 @@
 #  Build with the thread sanitizer (requires gcc or clang)
 #  Default=false
 #
+# -DFUZZ=[true|false]
+#  Build libfuzzer targets (requires clang)
+#  Default=false
+#
 
 cmake_minimum_required(VERSION 3.11.0) #first line, to shutup a cygwin warning
 project(libical C) #CXX is optional for the bindings
@@ -527,6 +531,24 @@ if(ENABLE_LTO_BUILD)
   else()
     message(FATAL_ERROR
       "Build link-time optimization using a non-GCC compiler is currently not supported.")
+  endif()
+endif()
+
+libical_option(FUZZ "Build with the libfuzzer (developer-only option)." False)
+if(FUZZ)
+  if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=fuzzer-no-link -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=fuzzer-no-link -g")
+  else()
+    message(FATAL_ERROR
+      "You are trying to build with libfuzzer using a non-Clang compiler.")
+  endif()
+  if(ENABLE_GTK_DOC)
+    message(STATUS
+      "Warning: Building the libical-glib developer documentation with libfuzzer is not supported."
+      "Turning-off the GTK_DOC"
+    )
+    set(ENABLE_GTK_DOC False)
   endif()
 endif()
 
